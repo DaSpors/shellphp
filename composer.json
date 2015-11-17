@@ -1,0 +1,19 @@
+{
+    "name": "daspors/shellphp",
+    "type": "library",
+    "description": "PHP command line tools",
+    "keywords": ["cli", "stdin", "stdout", "arguments", "args", "argv"],
+    "homepage": "http://github.com/daspors/shellphp",
+    "license": "WTFPL",
+    "authors": [
+        {
+            "name":     "Daniel Spors",
+            "email":    "shellphp@schlagsei.de"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "ShellPHP\\": "ShellPHP/"
+        }
+    }
+}
