@@ -2,7 +2,6 @@
 
 class CmdLineOption extends CmdLineData
 {
-	var $name;
 	var $value;
 	var $default;
 	var $required;
@@ -23,4 +22,12 @@ class CmdLineOption extends CmdLineData
 		if( !$this->value )
 			$this->err("Missing option '{$this->name}'");
 	}	
+
+	public function syntax()
+	{
+		if( $this->required )
+			echo "{this->syntaxName}";
+		else
+			echo "[{this->syntaxName}]";
+	}
 }

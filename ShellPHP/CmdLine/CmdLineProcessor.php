@@ -2,9 +2,11 @@
 
 abstract class CmdLineProcessor extends CmdLineParser
 {
+	var $name;
+	protected $commands = array();
+	protected $flags = array();
 	protected $options = array();
 	protected $arguments = array();
-	protected $commands = array();
 	protected $handlers = array();
 	
 	protected function validate()
@@ -23,7 +25,7 @@ abstract class CmdLineProcessor extends CmdLineParser
 				$this->err("Missing or wrong command '{$this->get(0)}'.\nAllowed values are: ".implode(" | ",$missing));
 		}
 		$data = array();
-		foreach( array_merge($this->options,$this->arguments) as $obj )
+		foreach( array_merge($this->flags,$this->options,$this->arguments) as $obj )
 		{
 			$obj->validate();
 			$data[ $obj->varname?$obj->varname:$obj->name ] = $obj->value;
@@ -33,6 +35,20 @@ abstract class CmdLineProcessor extends CmdLineParser
 		{
 			foreach( $this->handlers as $h )
 				call_user_func($h,$data);
+		}
+	}
+
+	public function syntax()
+	{
+		echo "Syntax:\n\t{$this->name} ";
+		foreach( array_merge($this->flags,$this->options,$this->arguments) as $obj )
+			$obj->syntax();
+
+		if( count($this->commands) > 0 )
+		{
+			echo " <command>\nCommands:\n";
+			foreach( $this->commands as $cmd )
+				echo "\t{$cmd->name}\t{$cmd->description}\n";
 		}
 	}
 	
@@ -51,6 +67,15 @@ abstract class CmdLineProcessor extends CmdLineParser
 		return $this;
 	}
 	
+	public function flag($name,$default)
+	{
+		$i = $this->indexOf($name);
+		$this->flags[] = $flag = new CmdLineFlag($this,$name,$default,$i!==false);
+		if( $i !== false )
+			$flag->setData(array_slice($this->data,$i+1,1));
+		return $flag;
+	}
+
 	public function opt($name,$default=null)
 	{
 		$i = $this->indexOf($name);

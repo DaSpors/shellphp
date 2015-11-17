@@ -2,7 +2,6 @@
 
 class CmdLineCommand extends CmdLineProcessor
 {
-	var $name;
 	var $present;
 	
 	public function __construct(CmdLineProcessor $parent, $name, $present)

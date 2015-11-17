@@ -31,5 +31,13 @@ class CmdLineArgument extends CmdLineData
 			$this->err("Useless argument '{$this->varname}'");
 		
 		$this->value = $this->count==1?$this->data[0]:$this->data;
-	}	
+	}
+
+	public function syntax()
+	{
+		if( $this->required )
+			echo "{this->syntaxName}";
+		else
+			echo "[{this->syntaxName}]";
+	}
 }

@@ -2,21 +2,31 @@
 
 abstract class CmdLineData extends CmdLineParser
 {
+	var $name;
 	var $varname;
-	var $description;
+	var $aliases = array();
 	var $role;
 	var $mustExist = false;
 
-	public function text($description)
-	{
-		$this->description = $description;
-		return $this;
-	}
-	
 	public function map($varname)
 	{
 		$this->varname = $varname;
 		return $this;
+	}
+
+	public function alias()
+	{
+		$this->aliases = array_merge($this->aliases,func_get_args());
+		return $this;
+	}
+
+	public function __get($name)
+	{
+		switch( $name )
+		{
+			case 'syntaxName':
+				return trim(str_replace("||","|",implode("|",array_merge(array($this->name,$this->varname),$this->aliases))),"|");
+		}
 	}
 
 	public function file(){ $this->role = 'file'; return $this; }

@@ -4,6 +4,7 @@ abstract class CmdLineParser
 {
 	protected $parent = false;
 	protected $data = array();
+	var $description;
 	
 	protected function setData($cli_args) { $this->data = $cli_args; return $this; }
 	protected function get($index){ return isset($this->data[$index])?$this->data[$index]:null; }
@@ -32,7 +33,10 @@ abstract class CmdLineParser
 		try
 		{
 			$r = $this->root();
-			$r->validate();
+			if( count($r->data) == 0 || $r->helpFlag->present )
+				$r->help();
+			else
+				$r->validate();
 			return $r;
 		}
 		catch(CmdLineParserException $ex)
@@ -41,6 +45,12 @@ abstract class CmdLineParser
 		}
 	}
 
+	public function text($description)
+	{
+		$this->description = $description;
+		return $this;
+	}
+	
 	public function __call($name,$args)
 	{
 		$obj = $this->__findImplementor($name);

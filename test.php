@@ -2,7 +2,7 @@
 
 include('shellphp.php');
 
-$cli = \ShellPHP\CmdLine\CmdLine::Make()
+$cli = \ShellPHP\CmdLine\CmdLine::Make("ShellPHP Test Script","Version 0.0.0.1")
 	->command('list')
 		->opt('-f','none')->map('filter')
 		->arrayArg('folder')
