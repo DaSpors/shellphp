@@ -19,7 +19,7 @@ class CmdLineOption extends CmdLineData
 		$this->value = trim(implode(" ",$this->data));
 		if( !$this->value )
 			$this->value = $this->default;
-		if( !$this->value )
+		if( is_null($this->value) )
 			$this->err("Missing option '{$this->name}'");
 	}	
 
