@@ -6,13 +6,7 @@ abstract class CmdLineParser
 	protected $data = array();
 	var $description;
 	
-	protected function setData($cli_args) { $this->data = $cli_args; return $this; }
 	protected function get($index){ return isset($this->data[$index])?$this->data[$index]:null; }
-	
-	protected function indexOf($str)
-	{
-		return array_search($str,$this->data,false);
-	}
 	
 	protected function err($msg)
 	{
@@ -26,6 +20,7 @@ abstract class CmdLineParser
 		return $this;
 	}
 	
+	protected abstract function setData($cli_args);
 	protected abstract function validate();
 	
 	public function go()
@@ -33,6 +28,7 @@ abstract class CmdLineParser
 		try
 		{
 			$r = $this->root();
+			$r->setData(array_slice($GLOBALS['argv'],1));
 			if( count($r->data) == 0 || $r->helpFlag->present )
 				$r->help();
 			else

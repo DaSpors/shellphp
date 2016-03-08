@@ -9,9 +9,21 @@ class CmdLine extends CmdLineProcessor
 	private function __construct($title=false, $version=false)
 	{
 		$this->name = $GLOBALS['argv'][0];
-		$this->helpFlag = $this->setTitle($title)->setVersion($version)
-			->setData( array_slice($GLOBALS['argv'],1) )
-			->flag('-h',false)->alias('--help','/?');
+		$this->setTitle($title)->setVersion($version);
+			
+		if( stripos(php_uname('s'),'windows') !== false )
+			$this->helpFlag = $this->flag('/?',false)->alias('--help');
+		else
+			$this->helpFlag = $this->flag('--help',false)->alias('/?');
+		
+		$this->helpFlag->text('Shows help');
+	}
+	
+	protected function setData($cli_args)
+	{
+		$this->data = $cli_args;
+		$this->data = $this->helpFlag->setData($this->data);
+		return array();
 	}
 	
 	public static function Make($title=false, $version=false)
@@ -24,8 +36,8 @@ class CmdLine extends CmdLineProcessor
 
 	public function help()
 	{
-		echo str_replace("\n\n","\n","{$this->title}\n{$this->version}\n");
-		$this->syntax();
+		CLI::write(str_replace("\n\n","\n","{$this->title}\n{$this->version}\n"));
+		$this->syntax(false);
 		die("\n");
 	}
 }

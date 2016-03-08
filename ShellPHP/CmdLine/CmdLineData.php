@@ -25,12 +25,35 @@ abstract class CmdLineData extends CmdLineParser
 		switch( $name )
 		{
 			case 'syntaxName':
-				return trim(str_replace("||","|",implode("|",array_merge(array($this->name,$this->varname),$this->aliases))),"|");
+				return trim(str_replace("||","|",implode("|",array_merge(array($this->name),$this->aliases))),"|");
+			case 'defaultValue':
+				if( $this instanceof CmdLineFlag )
+					return $this->default?'on':'off';
+				if( $this instanceof CmdLineOption )
+					return $this->required?'required':CLI::toString($this->default);
+				return CLI::toString($this->default);
+			case 'requiredValue':
+				if( $this instanceof CmdLineArgument )
+					return $this->required?'required':'optional';
+				if( $this instanceof CmdLineOption )
+					return $this->required?'required':'optional';
+				return CLI::toString($this->required);
 		}
 	}
 
+	protected function validateRole()
+	{
+		switch( $this->role )
+		{
+			case 'file':
+			case 'folder': 
+				$this->value = realpath($this->value);
+				if( !file_exists($this->value) )
+					$this->err("{$this->syntaxName}: ".ucwords($this->role)." not found'");
+				break;
+		}
+	}
+	
 	public function file(){ $this->role = 'file'; return $this; }
 	public function folder(){ $this->role = 'folder'; return $this; }
-	public function exists($yes=true){ $this->mustExist = $yes; return $this; }
-	public function missing($yes=true){ $this->mustExist = $yes; return $this; }
 }

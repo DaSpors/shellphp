@@ -2,42 +2,50 @@
 
 class CmdLineArgument extends CmdLineData
 {
-	var $count1;
-	var $count2;
 	var $default;
 	var $required;
+	var $repeat;
 
-	public function __construct(CmdLineProcessor $parent, $varname, $default, $count1, $count2=false)
+	public function __construct(CmdLineProcessor $parent, $varname, $default, $repeat = false)
 	{
 		$this->parent = $parent;
-		$this->count1 = $count1;
-		$this->count2 = $count2;
 		$this->default = $default;
 		$this->required = is_null($default);
+		$this->repeat = $repeat;
+		$this->name = $varname;
 		$this->map($varname);
+	}
+	
+	protected function setData($cli_args)
+	{
+		if( $this->repeat )
+			$this->data = array_splice($cli_args,0);
+		else
+			$this->data = array_splice($cli_args,0,1);
+		return array_values($cli_args);
 	}
 
 	protected function validate()
 	{
-		if( count($this->data) < $this->count1 )
-			$this->err("Missing argument '{$this->varname}'");
-	
-		$cnt = $this->count2 === false?$this->count1:$this->count2;
-
-		if( count($this->data) < $cnt )
-			$this->err("Missing argument '{$this->varname}'");
-
-		if( count($this->data) > $cnt )
-			$this->err("Useless argument '{$this->varname}'");
+		$this->value = trim(implode(" ",$this->data));
+		if( !$this->value )
+			$this->value = $this->default;
+		if( is_null($this->value) )
+			$this->err("Missing argument '{$this->syntaxName}'");
 		
-		$this->value = $this->count==1?$this->data[0]:$this->data;
+		$this->validateRole();
 	}
 
-	public function syntax()
+	public function syntax($short=true,$eol="")
 	{
-		if( $this->required )
-			echo "{this->syntaxName}";
-		else
-			echo "[{this->syntaxName}]";
+		if( $short )
+		{
+			if( $this->required )
+				CLI::write("<{$this->syntaxName}>{$eol}");
+			else
+				CLI::write("[<{$this->syntaxName}>]{$eol}");
+			return;
+		}
+		CLI::write("\t{$this->syntaxName}\t({$this->requiredValue})\t{$this->description}{$eol}");
 	}
 }
