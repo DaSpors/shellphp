@@ -72,27 +72,34 @@ class CLI
 	
 	private static $current_progress = false;
 	private static $current_progress_start;
+	private static $current_progress_last;
+	private static $current_progress_width;
 	public static function progress($done,$total)
 	{
 		if( self::$current_progress === false )
 		{
 			if( $done == $total ) 
 				return;
-			self::$current_progress_start = time();
+			self::$current_progress_start = self::$current_progress_last = time();
 			self::$current_progress = 0;
+			self::$current_progress_width = ISWIN?50:(intval(shell_exec("tput cols")) - 20);
 		}
-		$perc = floor($done / $total * 100);
-		if( $perc == self::$current_progress )
+		$perc_float = $done / $total * 100;
+		$perc = floor($perc_float);
+		if( $perc == self::$current_progress && time() == self::$current_progress_last )
 			return;
 		
+		self::$current_progress_last = time();
 		$running = time() - self::$current_progress_start;
-		$eta = floor(100 / $perc * $running) - $running + 1;
-		
+		$eta = ($perc_float * $running > 0)
+			?floor(100 / $perc_float * $running) - $running + 1
+			:'NA';
+			
 		self::$current_progress = $perc;
-		echo '[';
-		for($i=0; $i<100; $i+=2)
-			echo ($i<$perc)?'=':' ';
-		echo "] {$perc}% ETA ".Format::duration($eta)."\r";
+		$bar = floor($perc * self::$current_progress_width / 100);
+		echo "[".str_repeat("=",$bar).str_repeat(" ",self::$current_progress_width-$bar)."]";
+		echo " {$perc}% ETA ".Format::duration($eta)."\r";
+		
 		if( $done == $total )
 		{
 			self::$current_progress = false;
@@ -120,9 +127,18 @@ class CLI
 	public static function flushTable()
 	{
 		$lengths = array();
-		foreach( self::$current_table[0] as $i=>$null )
+		$mli = 0; $len = 0;
+		foreach( self::$current_table as $i=>$r )
 		{
-			$column = array_map(function($item)use($i){ return $item[$i]; },CLI::$current_table);
+			if( $len < count($r) )
+			{
+				$mli = $i;
+				$len = count($r);
+			}
+		}
+		foreach( self::$current_table[$mli] as $i=>$null )
+		{
+			$column = array_map(function($item)use($i){ return isset($item[$i])?$item[$i]:''; },CLI::$current_table);
 			$lengths[$i] = max(array_map('strlen',$column));
 		}
 		
@@ -133,13 +149,15 @@ class CLI
 			return $row;
 		},self::$current_table);
 		
+		$pad = "  ";
+		$head = str_pad("-",strlen(implode($pad,self::$current_table[$mli])),'-');
 		foreach( self::$current_table as $row )
 		{
-			write(implode("  ",$row));
+			write(implode($pad,$row));
 			if( self::$current_table_hp === false )
 			{
 				self::$current_table_hp = true;
-				write(str_pad("-",strlen(implode("  ",$row)),'-'));
+				write($head);
 			}
 		}
 		self::$current_table = array();
