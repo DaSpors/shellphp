@@ -72,27 +72,22 @@ class CLI
 	
 	private static $current_progress = false;
 	private static $current_progress_start;
-	private static $current_progress_last;
 	public static function progress($done,$total)
 	{
 		if( self::$current_progress === false )
 		{
 			if( $done == $total ) 
 				return;
-			self::$current_progress_start = self::$current_progress_last = time();
+			self::$current_progress_start = time();
 			self::$current_progress = 0;
 		}
-		$perc_float = $done / $total * 100;
-		$perc = floor($perc_float);
-		if( $perc == self::$current_progress && time() == self::$current_progress_last )
+		$perc = floor($done / $total * 100);
+		if( $perc == self::$current_progress )
 			return;
 		
-		self::$current_progress_last = time();
 		$running = time() - self::$current_progress_start;
-		$eta = ($perc_float * $running > 0)
-			?floor(100 / $perc_float * $running) - $running + 1
-			:'NA';
-			
+		$eta = floor(100 / $perc * $running) - $running + 1;
+		
 		self::$current_progress = $perc;
 		echo '[';
 		for($i=0; $i<100; $i+=2)
