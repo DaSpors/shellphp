@@ -6,7 +6,8 @@ abstract class CmdLineData extends CmdLineParser
 	var $varname;
 	var $aliases = array();
 	var $role;
-	var $mustExist = false;
+	var $validValues = array();
+	var $valueSeparator = ',';
 
 	public function map($varname)
 	{
@@ -51,9 +52,35 @@ abstract class CmdLineData extends CmdLineParser
 				if( !file_exists($this->value) )
 					$this->err("{$this->syntaxName}: ".ucwords($this->role)." not found'");
 				break;
+			case 'enum':
+				if( !in_array($this->value,$this->validValues) )
+					$this->err("{$this->syntaxName}: invalid value '{$this->value}'.\nShould be one of ".implode($this->valueSeparator,$this->validValues));
+				break;
+			case 'set':
+				$vals = explode($this->valueSeparator,$this->value);
+				$wrong = array_diff($vals,$this->validValues);
+				
+				if( count($wrong)>0 )
+					$this->err("{$this->syntaxName}: invalid values '".implode("'{$this->valueSeparator}'",$wrong)."'.\nShould be any of ".implode($this->valueSeparator,$this->validValues));
+				break;
 		}
 	}
 	
 	public function file(){ $this->role = 'file'; return $this; }
 	public function folder(){ $this->role = 'folder'; return $this; }
+	
+	public function oneOf()
+	{
+		$this->role = 'enum';
+		$this->validValues = func_get_args();
+		return $this;
+	}
+	
+	public function setOf($separator=',')
+	{
+		$this->role = 'set';
+		$this->validValues = func_get_args();
+		$this->valueSeparator = array_shift($this->validValues);
+		return $this;
+	}
 }

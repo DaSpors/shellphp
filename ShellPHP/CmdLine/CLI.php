@@ -49,6 +49,12 @@ class CLI
 		return implode("\n",$res);
 	}
 	
+	private static $prependDT = false;
+	public static function prependDateTime($yes=true)
+	{
+		self::$prependDT = $yes?true:false;
+	}
+	
 	public static function toString($variable)
 	{
 		return self::__renderVar($variable);
@@ -57,6 +63,8 @@ class CLI
 	public static function write()
 	{
 		$out = array();
+		if( self::$prependDT )
+			$out[] = "[".date("Y-m-d H:i:s")."]";
 		foreach( func_get_args() as $a )
 			$out[] = self::toString($a);
 		echo implode("\t",$out);
@@ -65,6 +73,8 @@ class CLI
 	public static function writeln()
 	{
 		$out = array();
+		if( self::$prependDT )
+			$out[] = "[".date("Y-m-d H:i:s")."]";
 		foreach( func_get_args() as $a )
 			$out[] = self::toString($a);
 		echo implode("\t",$out)."\n";
@@ -98,13 +108,15 @@ class CLI
 		self::$current_progress = $perc;
 		$bar = floor($perc * self::$current_progress_width / 100);
 		echo "[".str_repeat("=",$bar).str_repeat(" ",self::$current_progress_width-$bar)."]";
-		echo " {$perc}% ETA ".Format::duration($eta)."\r";
+		
 		
 		if( $done == $total )
 		{
 			self::$current_progress = false;
-			echo "\n";
+			echo " {$perc}% DUR ".Format::duration($running)."\n";
 		}
+		else
+			echo " {$perc}% ETA ".Format::duration($eta)."\r";
 	}
 	
 	private static $current_table = false;
@@ -126,6 +138,9 @@ class CLI
 
 	public static function flushTable()
 	{
+		if( count(self::$current_table) == 0 )
+			return;
+		
 		$lengths = array();
 		$mli = 0; $len = 0;
 		foreach( self::$current_table as $i=>$r )
@@ -153,11 +168,11 @@ class CLI
 		$head = str_pad("-",strlen(implode($pad,self::$current_table[$mli])),'-');
 		foreach( self::$current_table as $row )
 		{
-			write(implode($pad,$row));
+			self::writeln(implode($pad,$row));
 			if( self::$current_table_hp === false )
 			{
 				self::$current_table_hp = true;
-				write($head);
+				self::writeln($head);
 			}
 		}
 		self::$current_table = array();
