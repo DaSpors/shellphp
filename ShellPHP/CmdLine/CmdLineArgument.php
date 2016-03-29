@@ -27,12 +27,22 @@ class CmdLineArgument extends CmdLineData
 
 	protected function validate()
 	{
-		$this->value = trim(implode(" ",$this->data));
-		if( !$this->value )
-			$this->value = $this->default;
-		if( is_null($this->value) )
-			$this->err("Missing argument '{$this->syntaxName}'");
-		
+		if( $this->repeat )
+		{
+			$this->value = $this->data;
+			if( count($this->value) == 0 )
+				$this->value = array($this->default);
+			if( count($this->value) == 0 )
+				$this->err("Missing argument '{$this->syntaxName}'");
+		}
+		else
+		{
+			$this->value = trim(implode(" ",$this->data));
+			if( !$this->value )
+				$this->value = $this->default;
+			if( is_null($this->value) )
+				$this->err("Missing argument '{$this->syntaxName}'");
+		}		
 		$this->validateRole();
 	}
 

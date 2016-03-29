@@ -48,9 +48,14 @@ abstract class CmdLineData extends CmdLineParser
 		{
 			case 'file':
 			case 'folder': 
-				$this->value = realpath($this->value);
-				if( !file_exists($this->value) )
-					$this->err("{$this->syntaxName}: ".ucwords($this->role)." not found'");
+				$test = is_array($this->value)?$this->value:array($this->value);
+				foreach( $test as $i=>$v )
+				{
+					$test[$i] = $v = realpath($v);
+					if( !file_exists($v) )
+						$this->err("{$this->syntaxName}: ".ucwords($this->role)." not found'");
+				}
+				$this->value = is_array($this->value)?$test:implode("",$test);
 				break;
 			case 'enum':
 				if( !in_array($this->value,$this->validValues) )

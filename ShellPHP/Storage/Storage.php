@@ -18,7 +18,7 @@ class Storage
 		foreach( self::$stats as $name=>$value )
 		{
 			$value = round($value*1000,0);
-			if( $value > 0 )
+			if( $value > 1 )
 				\ShellPHP\CmdLine\CLI::addTableRow(array($value,$name));
 		}
 		\ShellPHP\CmdLine\CLI::flushTable();
