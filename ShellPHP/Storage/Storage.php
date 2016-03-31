@@ -19,7 +19,11 @@ class Storage
 		{
 			$value = round($value*1000,0);
 			if( $value > 1 )
-				\ShellPHP\CmdLine\CLI::addTableRow(array($value,$name));
+			{
+				file_put_contents(sys_get_temp_dir().'/storage.stats.txt',"$name\t\t$value\n",FILE_APPEND);
+				if( $value > 5 )
+					\ShellPHP\CmdLine\CLI::addTableRow(array($value,$name));
+			}
 		}
 		\ShellPHP\CmdLine\CLI::flushTable();
 		die();
@@ -27,6 +31,7 @@ class Storage
 	public static function StatCount($title, $inc=1)
 	{
 		self::$stats[$title] = isset(self::$stats[$title])?self::$stats[$title]+$inc:$inc;
+		return microtime(true);
 	}
 	public $LastStatement = array();
 	
@@ -40,6 +45,8 @@ class Storage
 	private $lastStatementStart;
 	private function setLastStatement($sql,$arguments=array())
 	{
+		if( $sql instanceof \SQLite3Stmt )
+			$sql = array_search($sql,$this->statementCache,true);
 		$this->LastStatement = array("sql"=>$sql,"args"=>$arguments);
 		$this->lastStatementStart = microtime(true);
 	}
@@ -129,16 +136,57 @@ class Storage
 		return new Query('StoredObject',$tablename);
 	}
 	
-	public function query($sql,$row_callback=false)
+	private $statementCache = array();
+	public function prepare($sql, $arguments=array(), $schema=false)
+	{
+		if( $sql instanceof \SQLite3Stmt )
+		{
+			$stmt = $sql;
+			$stmt->clear();
+		}
+		elseif( !isset($this->statementCache[$sql]) || !$this->statementCache[$sql] )
+			$stmt = $this->statementCache[$sql] = @$this->db->prepare($sql);
+		else
+		{
+			$stmt = $this->statementCache[$sql];
+			$stmt->clear();
+		}
+		
+		if( !$stmt )
+			throw new StorageException($this->db,$sql);
+		
+		$this->setArguments($stmt,$arguments,$schema,false);
+		return $stmt;
+	}
+	
+	public function setArguments($statement, $arguments=array(), $schema=false, $clear=true)
+	{
+		if( $clear )
+			$statement->clear();
+		if( is_array($arguments) && count($arguments)>0 )
+		{
+			foreach( $arguments as $k=>$v )
+			{
+				if( $schema && isset($schema->columns[$k]['sql_type']) )
+					$statement->bindValue($k,$v,$schema->columns[$k]['sql_type']);
+				else
+					$statement->bindValue($k,$v);
+			}
+		}
+		return $this;
+	}
+	
+	public function query($sql, $arguments=array(),$row_callback=false)
 	{
 		$this->setLastStatement($sql);
 		
-		$tab = preg_match("/select.+from\s+([^\s]+)/i",$sql,$m)
+		$tab = (is_string($sql) && preg_match("/select.+from\s+([^\s]+)/i",$sql,$m))
 			?preg_replace("/[^a-z0-9-_.]/i","",$m[1])
 			:false;
 		$map = isset($this->__typeMap[$tab])?$this->__typeMap[$tab]:false;
 		
-		$rs = @$this->db->query($sql);
+		$stmt = $this->prepare($sql,$arguments);
+		$rs = @$stmt->execute();
 		$this->statLastStatement();
 		if( $rs === false )
 			throw new StorageException($this->db,$sql);
@@ -160,42 +208,33 @@ class Storage
 		return $res;
 	}
 	
-	public function querySingle($sql, $entire_row=false)
+	public function querySingle($sql, $arguments=array(), $entire_row=false)
 	{
 		$this->setLastStatement($sql);
-		$res = @$this->db->querySingle($sql,$entire_row);
-		$this->statLastStatement();
-		if( $res === false )
-			throw new StorageException($this->db,$sql);
 		
-		return $res;
+		$stmt = $this->prepare($sql,$arguments);
+		$rs = @$stmt->execute();
+		$this->statLastStatement();
+		if( $rs === false )
+			throw new StorageException($this->db,$sql);
+		if( $entire_row )
+			while( $row = $rs->fetchArray(SQLITE3_ASSOC) )
+				return $row;
+		else
+			while( $row = $rs->fetchArray(SQLITE3_NUM) )
+				return $row[0];
+		return null;
 	}
 	
 	public function exec($sql,$arguments=array(),$schema=false,$await_locks=true)
 	{
 		$this->setLastStatement($sql,$arguments);
 		
-		if( is_array($arguments) && count($arguments)>0 )
-		{
-			$stmt = @$this->db->prepare($sql);
-			if( !$stmt )
-				throw new StorageException($this->db,$sql);
-			
-			foreach( $arguments as $k=>$v )
-			{
-				if( $schema && isset($schema->columns[$k]['sql_type']) )
-					$stmt->bindValue($k,$v,$schema->columns[$k]['sql_type']);
-				else
-					$stmt->bindValue($k,$v);
-			}
-		}
+		$stmt = $this->prepare($sql,$arguments,$schema);
 		
 		do
 		{
-			if( isset($stmt) )
-				$res = @$stmt->execute();
-			else
-				$res = @$this->db->exec($sql);
+			$res = @$stmt->execute();
 			$code = $this->db->lastErrorCode();
 		}while( $res === false && $code == 5 && $await_locks );
 		
@@ -216,7 +255,11 @@ class Storage
 	
 	public function truncate($table)
 	{
+		if( !$this->tableExists($table) )
+			return $this;
 		$this->exec("DELETE FROM [$table]");
+		if( !$this->tableExists('SQLITE_SEQUENCE') )
+			return $this;
 		$this->exec("UPDATE SQLITE_SEQUENCE SET SEQ=0 WHERE NAME='$table'");
 		return $this;
 	}

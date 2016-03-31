@@ -18,11 +18,11 @@ class StoredObjectSchema
 		
 		$scheme = new StoredObjectSchema($table);
 		
-		$rs = $storage->query("PRAGMA INDEX_LIST('$table')",function($row)use(&$scheme,$storage)
+		$rs = $storage->query("PRAGMA INDEX_LIST('$table')",false,function($row)use(&$scheme,$storage)
 		{
 			$n = $row['name'];
 			$u = $row['unique']>0;
-			$info = $storage->query("PRAGMA INDEX_INFO('$n')",function($i)use(&$scheme,$n,$u)
+			$info = $storage->query("PRAGMA INDEX_INFO('$n')",false,function($i)use(&$scheme,$n,$u)
 			{
 				$scheme->addIndexColumn($n,$i['name'],$u);
 			});
@@ -30,7 +30,7 @@ class StoredObjectSchema
 		
 		$createcode = $storage->querySingle("SELECT sql FROM sqlite_master WHERE type='table' AND name='$table'");
 		$pk_is_ai = stripos($createcode,"autoincrement") !== false;
-		$rs = $storage->query("PRAGMA table_info([$table])",function($row)use(&$scheme,$pk_is_ai)
+		$rs = $storage->query("PRAGMA table_info([$table])",false,function($row)use(&$scheme,$pk_is_ai)
 		{
 			$pk = $row['pk']>0;
 			$ai = $pk && $pk_is_ai;
@@ -179,7 +179,7 @@ class StoredObjectSchema
 		
 		list($tab,$defaults) = $this->ensureTable($model);
 		
-		$start = microtime(true);
+		//$start = microtime(true);
 		$comb = array(); $vals = array();
 		$match = array();
 		foreach( $defaults as $k=>$v )
@@ -205,7 +205,7 @@ class StoredObjectSchema
 			else
 				$comb[] = "[$k]=$ph";
 		}
-		Storage::StatCount(__METHOD__,microtime(true)-$start);
+		//Storage::StatCount(__METHOD__,microtime(true)-$start);
 		return 0 < Storage::Make()->exec("UPDATE [$tab] SET ".implode(", ",$comb)." WHERE ".implode(" AND ",$match),$vals,$this);
 	}
 	

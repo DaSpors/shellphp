@@ -7,7 +7,7 @@ class StorageException extends \Exception
 		if( $message instanceof \SQLite3 )
 			$message = "[".$message->lastErrorCode()."] ".$message->lastErrorMsg();
 		
-		if( $sql )
+		if( is_string($sql) )
 			$message .= "\nSQL: $sql";
 		
 		parent::__construct($message);

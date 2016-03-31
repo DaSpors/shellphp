@@ -238,14 +238,14 @@ class Query
 	public function results()
 	{
 		$res = array();
-		Storage::Make()->query($this->renderSql(),function($row,$db,$model)use(&$res){ $res[] = $model?$model:$row; });
+		Storage::Make()->query($this->renderSql(),false,function($row,$db,$model)use(&$res){ $res[] = $model?$model:$row; });
 		return $res;
 	}
 	
 	public function current()
 	{
 		$res = null;
-		Storage::Make()->query($this->renderSql(),function($row,$db,$model)use(&$res){ $res = $model?$model:$row; return false; });
+		Storage::Make()->query($this->renderSql(),false,function($row,$db,$model)use(&$res){ $res = $model?$model:$row; return false; });
 		return $res;
 	}
 	
@@ -265,6 +265,6 @@ class Query
 	
 	public function each($callback)
 	{
-		Storage::Make()->query($this->renderSql(),function($row,$db,$model)use(&$callback){ $callback($model?$model:$row); });
+		Storage::Make()->query($this->renderSql(),false,function($row,$db,$model)use(&$callback){ $callback($model?$model:$row); });
 	}
 }
