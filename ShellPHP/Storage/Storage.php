@@ -65,11 +65,9 @@ class Storage
 		
 		try
 		{
+			$res->__typeMap = $res->__classMap = array();
 			if( !$res->tableExists('shellphp_types') )
-			{
 				$res->exec("CREATE TABLE [shellphp_types]([classname] text PRIMARY KEY, [tablename] text)");
-				$res->__typeMap = $res->__classMap = array();
-			}
 			else
 			{
 				$res->needs_vakuum = false;

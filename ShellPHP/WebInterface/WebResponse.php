@@ -52,7 +52,7 @@ class WebResponse
 				}
 				break;
 		}
-		if( !$mime ) 
+		if( !isset($mime) || !$mime ) 
 			$mime = "text/html; charset=utf-8";
 		return WebResponse::Make(200, file_get_contents($filename))
 			->header("Content-Type",$mime);
