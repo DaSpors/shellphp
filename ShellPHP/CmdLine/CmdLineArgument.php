@@ -38,7 +38,7 @@ class CmdLineArgument extends CmdLineData
 		else
 		{
 			$this->value = trim(implode(" ",$this->data));
-			if( !$this->value )
+			if( $this->value === '' )
 				$this->value = $this->default;
 			if( is_null($this->value) )
 				$this->err("Missing argument '{$this->syntaxName}'");

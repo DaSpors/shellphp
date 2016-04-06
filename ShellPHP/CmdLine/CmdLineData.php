@@ -9,6 +9,9 @@ abstract class CmdLineData extends CmdLineParser
 	var $validValues = array();
 	var $valueSeparator = ',';
 
+	protected function completion()
+	{}
+	
 	public function map($varname)
 	{
 		$this->varname = $varname;
@@ -27,6 +30,8 @@ abstract class CmdLineData extends CmdLineParser
 		{
 			case 'syntaxName':
 				return trim(str_replace("||","|",implode("|",array_merge(array($this->name),$this->aliases))),"|");
+			case 'completionName':
+				return trim(str_replace("  "," ",implode(" ",array_merge(array($this->name),$this->aliases)))," ");
 			case 'defaultValue':
 				if( $this instanceof CmdLineFlag )
 					return $this->default?'on':'off';

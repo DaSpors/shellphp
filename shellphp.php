@@ -1,5 +1,7 @@
 <?php
 
+define('ISWIN',(stripos(php_uname('s'),'windows') !== false));
+
 spl_autoload_register(function ($class)
 {
     $prefix = 'ShellPHP\\';

@@ -22,13 +22,25 @@ abstract class CmdLineParser
 	
 	protected abstract function setData($cli_args);
 	protected abstract function validate();
+	protected abstract function completion();
 	
-	public function go()
+	public function go($completion_variable='__check__')
 	{
+		global $argv;
 		try
 		{
 			$r = $this->root();
-			$r->setData(array_slice($GLOBALS['argv'],1));
+			if( isset($argv[1]) && $argv[1] === $completion_variable )
+			{
+				if( count($argv)<3 )
+					exit(0);
+				array_splice($argv,0,3);
+				$r->setData($argv);
+				$r->completion();
+				exit(0);
+			}
+			
+			$r->setData(array_slice($argv,1));
 			if( count($r->data) == 0 || $r->helpFlag->present )
 				$r->help();
 			else

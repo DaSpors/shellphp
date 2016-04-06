@@ -10,6 +10,8 @@ abstract class CmdLineProcessor extends CmdLineParser
 	protected $arguments = array();
 	protected $handlers = array();
 	
+	public function setName($name){ $this->name = $name; return $this; }
+	
 	protected function setData($cli_args)
 	{
 		$i = array_search($this->name,$cli_args,false);
@@ -109,6 +111,30 @@ abstract class CmdLineProcessor extends CmdLineParser
 			CLI::write("\n\nArguments:\n");
 			foreach( $this->arguments as $obj )
 				$obj->syntax(false,"\n");
+		}
+	}
+	
+	protected function completion()
+	{
+		if( !$this->present )
+			return;
+		
+		$res = array();
+		foreach( $this->commands as $c )
+		{
+			$this->data = $c->setData($this->data);
+			$c->completion();
+			$res[] = $c->name;
+		}
+		foreach( array_merge($this->flags,$this->options,$this->arguments) as $obj )
+		{
+			$this->data = $obj->setData($this->data);
+			$res[] = $obj->completionName;
+		}
+		if( count($res)>0 )
+		{
+			echo implode(" ",$res);
+			exit(0);
 		}
 	}
 	

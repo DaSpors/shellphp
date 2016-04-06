@@ -34,7 +34,7 @@ class CmdLineOption extends CmdLineData
 	protected function validate()
 	{
 		$this->value = trim(implode(" ",$this->data));
-		if( !$this->value )
+		if( $this->value === '' )
 			$this->value = $this->default;
 		if( is_null($this->value) )
 			$this->err("Missing option '{$this->syntaxName}'");

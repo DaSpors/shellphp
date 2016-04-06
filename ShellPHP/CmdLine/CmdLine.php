@@ -8,7 +8,7 @@ class CmdLine extends CmdLineProcessor
 	
 	private function __construct($title=false, $version=false)
 	{
-		$this->name = $GLOBALS['argv'][0];
+		$this->name = basename($GLOBALS['argv'][0]);
 		$this->setTitle($title)->setVersion($version);
 			
 		if( stripos(php_uname('s'),'windows') !== false )
