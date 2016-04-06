@@ -258,6 +258,17 @@ class Query
 		return $res;
 	}
 	
+	public function enumerate($column)
+	{
+		$mem = $this->columns;
+		$this->columns = array($column);
+		$res = array();
+		foreach( $this->results() as $r )
+			$res[] = $r[$column];
+		$this->columns = $mem;
+		return array_unique($res);
+	}
+	
 	public function count()
 	{
 		return $this->scalar("count(*)");
