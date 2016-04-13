@@ -11,19 +11,19 @@ class Storage
 	private $db_refs = 0;
 	
 	public static $stats = array();
+	public static $counts = array();
 	public static function StatsOut()
 	{
 		arsort(self::$stats);
-		\ShellPHP\CmdLine\CLI::startTable(array('ms','Name'));
+		\ShellPHP\CmdLine\CLI::startTable(array('ms','count','Name'));
+		$max = 100;
 		foreach( self::$stats as $name=>$value )
 		{
 			$value = round($value*1000,0);
-			if( $value > 1 )
-			{
-				file_put_contents(sys_get_temp_dir().'/storage.stats.txt',"$name\t\t$value\n",FILE_APPEND);
-				if( $value > 5 )
-					\ShellPHP\CmdLine\CLI::addTableRow(array($value,$name));
-			}
+			file_put_contents(sys_get_temp_dir().'/storage.stats.txt',"$name\t\t".self::$counts[$name]."\t\t$value\n",FILE_APPEND);
+			\ShellPHP\CmdLine\CLI::addTableRow(array($value,self::$counts[$name],$name));
+			if( --$max < 0 )
+				break;
 		}
 		\ShellPHP\CmdLine\CLI::flushTable();
 		die();
@@ -31,7 +31,12 @@ class Storage
 	public static function StatCount($title, $inc=1)
 	{
 		self::$stats[$title] = isset(self::$stats[$title])?self::$stats[$title]+$inc:$inc;
+		self::$counts[$title] = isset(self::$counts[$title])?self::$counts[$title]+1:1;
 		return microtime(true);
+	}
+	public static function StatClear()
+	{
+		self::$stats = array();
 	}
 	public $LastStatement = array();
 	
@@ -79,7 +84,6 @@ class Storage
 						continue;
 					if( !$res->tableExists($tablename) )
 						continue;
-					
 					$code = $classname::getCodeScheme();
 					if( $code->table == $tablename )
 					{
@@ -174,14 +178,19 @@ class Storage
 		return $this;
 	}
 	
-	public function query($sql, $arguments=array(),$row_callback=false)
+	public function query($sql, $arguments=array(),$row_callback=false,$classname=false)
 	{
-		$this->setLastStatement($sql);
+		$this->setLastStatement($sql,$arguments);
 		
-		$tab = (is_string($sql) && preg_match("/select.+from\s+([^\s]+)/i",$sql,$m))
-			?preg_replace("/[^a-z0-9-_.]/i","",$m[1])
-			:false;
-		$map = isset($this->__typeMap[$tab])?$this->__typeMap[$tab]:false;
+		if( $classname )
+			$map = $classname;
+		else
+		{
+			$tab = (is_string($sql) && preg_match("/select.+from\s+([^\s]+)/i",$sql,$m))
+				?preg_replace("/[^a-z0-9-_.]/i","",$m[1])
+				:false;
+			$map = isset($this->__typeMap[$tab])?$this->__typeMap[$tab]:false;
+		}
 		
 		$stmt = $this->prepare($sql,$arguments);
 		$rs = @$stmt->execute();
@@ -208,7 +217,7 @@ class Storage
 	
 	public function querySingle($sql, $arguments=array(), $entire_row=false)
 	{
-		$this->setLastStatement($sql);
+		$this->setLastStatement($sql,$arguments);
 		
 		$stmt = $this->prepare($sql,$arguments);
 		$rs = @$stmt->execute();
@@ -251,6 +260,14 @@ class Storage
 		return $this->querySingle("SELECT count(*) FROM sqlite_master WHERE type='table' AND tbl_name='$table'") > 0;
 	}
 	
+	public function setClassMapping($classname,$tablename)
+	{
+		if( isset($res->__classMap[$classname]) && $res->__classMap[$classname] == $tablename )
+			return;
+		$res->__classMap[$classname] = $tablename;
+		$res->__typeMap = array_flip($res->__classMap);
+	}
+	
 	public function truncate($table)
 	{
 		if( !$this->tableExists($table) )
@@ -269,7 +286,7 @@ class Storage
 			$raw = Setting::Select()->eq('name',$name)->scalar('value');
 			if( $raw )
 				return unserialize($raw);
-		}catch(StorageException $ex){ }
+		}catch(StorageException $ex){  }
 		return $default;
 	}
 	
