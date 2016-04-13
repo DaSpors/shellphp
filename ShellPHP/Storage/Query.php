@@ -94,17 +94,7 @@ class Query
 	
 	public function shuffle()
 	{
-		$mem = $this->where;
-		$this->where = new QueryConditionBranch('AND');
-		$this->where->conditions[] = "_ROWID_ >= (abs(random()) % (SELECT max(_ROWID_) FROM [{$this->tableName}]))";
-		if( $mem )
-		{
-			$this->where->conditions[] = $mem;
-			$mem->parent = $this->where;
-		}
-		else
-			$this->currentBranch = $this->where;
-		return $this;
+		return $this->orderBy("RANDOM()");
 	}
 
 	public function in($column,$values=array(),$all_if_empty=false)
@@ -118,6 +108,7 @@ class Query
 		return $this->__addCondition(' IN',array($column,$column2,false,false));
 	}
 
+	private $arguments = array();
 	private function __escapeOp($operation, $op, $escape)
 	{
 		if( $this->scheme && $this->scheme->hasColumn($op) )
@@ -127,6 +118,9 @@ class Query
 
 		if( $operation == ' LIKE ' && !preg_match('/[%_]/',$op) )
 			$op = "%$op%";
+		$k = "arg".count($this->arguments);
+		$this->arguments[$k] = $op;
+		return ":$k";
 		return "'".$this->escaper->escapeString($op)."'";
 	}
 	
@@ -238,14 +232,14 @@ class Query
 	public function results()
 	{
 		$res = array();
-		Storage::Make()->query($this->renderSql(),false,function($row,$db,$model)use(&$res){ $res[] = $model?$model:$row; });
+		Storage::Make()->query($this->renderSql(),$this->arguments,function($row,$db,$model)use(&$res){ $res[] = $model?$model:$row; },$this->className);
 		return $res;
 	}
 	
 	public function current()
 	{
 		$res = null;
-		Storage::Make()->query($this->renderSql(),false,function($row,$db,$model)use(&$res){ $res = $model?$model:$row; return false; });
+		Storage::Make()->query($this->renderSql(),$this->arguments,function($row,$db,$model)use(&$res){ $res = $model?$model:$row; return false; },$this->className);
 		return $res;
 	}
 	
@@ -253,7 +247,7 @@ class Query
 	{
 		$mem = $this->columns;
 		$this->columns = array($column);
-		$res = Storage::Make()->querySingle($this->renderSql());
+		$res = Storage::Make()->querySingle($this->renderSql(),$this->arguments);
 		$this->columns = $mem;
 		return $res;
 	}
@@ -276,6 +270,6 @@ class Query
 	
 	public function each($callback)
 	{
-		Storage::Make()->query($this->renderSql(),false,function($row,$db,$model)use(&$callback){ $callback($model?$model:$row); });
+		Storage::Make()->query($this->renderSql(),$this->arguments,function($row,$db,$model)use(&$callback){ $callback($model?$model:$row); },$this->className);
 	}
 }
