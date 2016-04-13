@@ -2,6 +2,8 @@
 
 class StoredObjectSchema
 {
+	private static $_schemaCache = array();
+	
 	public $table = '';
 	public $columns = array();
 	public $uniques = array();
@@ -11,6 +13,9 @@ class StoredObjectSchema
 	
 	public static function FromTable($table)
 	{
+		if( isset(self::$_schemaCache[$table]) )
+			return self::$_schemaCache[$table];
+		
 		$storage = Storage::Make();
 		
 		if( !$storage->tableExists($table) )
@@ -21,6 +26,8 @@ class StoredObjectSchema
 		$rs = $storage->query("PRAGMA INDEX_LIST('$table')",false,function($row)use(&$scheme,$storage)
 		{
 			$n = $row['name'];
+			if( stripos($n,'sqlite_') === 0 )
+				return;
 			$u = $row['unique']>0;
 			$info = $storage->query("PRAGMA INDEX_INFO('$n')",false,function($i)use(&$scheme,$n,$u)
 			{
@@ -37,13 +44,14 @@ class StoredObjectSchema
 			$scheme->addColumn($row['name'],$row['type'],$pk,$ai);
 		});
 		
+		self::$_schemaCache[$table] = $scheme;
 		return $scheme;
 	}
 	
 	function addColumn($name,$type,$pk=false,$ai=false,$unique=false,$index=false)
 	{
-		if( $unique === $name ) $unique = "ndx_{$unique}";
-		if( $index === $name ) $index = "ndx_{$index}";
+		if( $unique === $name ) $unique = "uni_{$this->table}_{$unique}";
+		if( $index === $name ) $index = "ndx_{$this->table}_{$index}";
 		$type = strtoupper($type);
 		
 		$this->columns[$name] = compact('name','type','pk','ai');
@@ -107,7 +115,10 @@ class StoredObjectSchema
 			$classname = $this->buffer['classname'];
 		
 		if( !isset(StoredObjectSchema::$__once["tablename_{$classname}"]) )
+		{
 			$tab = StoredObjectSchema::$__once["tablename_{$classname}"] = $classname::GetTableName();
+			$storage->setClassMapping($classname,$tab);
+		}
 		else
 			$tab = StoredObjectSchema::$__once["tablename_{$classname}"];
 		
@@ -165,6 +176,8 @@ class StoredObjectSchema
 		$cnt = $storage->exec(
 			"INSERT OR ".($replace?"REPLACE":"IGNORE")." INTO [$tab](".implode(",",$cols).")VALUES(".implode(",",$vars).")",
 			$vals,$this);
+		if( $cnt && isset($defaults['id']) && !$model->id )
+			$model->id = $storage->querySingle("SELECT last_insert_rowid()");
 		
 		if( !$replace && $cnt < 1 && count($pk)>0 )
 			$cnt = $storage->exec("UPDATE [$tab] SET ".implode(", ",$comb)." WHERE ".implode(" AND ",$pk),$vals,$this);

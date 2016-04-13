@@ -4,7 +4,12 @@ class StoredObject implements \ArrayAccess
 {
 	private static $__schema = array();
 	
-	public function __construct(){}
+	public function __construct()
+	{
+		foreach( get_class_vars(get_class($this)) as $k=>$v )
+			if( $k != "__schema" )
+				$this->$k = null;
+	}
 	
 	public function offsetSet($offset, $value)
 	{
