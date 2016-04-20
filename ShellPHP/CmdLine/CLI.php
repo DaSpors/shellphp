@@ -83,6 +83,7 @@ class CLI
 	private static $current_progress = false;
 	private static $current_progress_start;
 	private static $current_progress_last;
+	private static $current_progress_offset = 0;
 	private static $current_progress_width;
 	public static function progress($done,$total)
 	{
@@ -92,6 +93,7 @@ class CLI
 				return;
 			self::$current_progress_start = self::$current_progress_last = time();
 			self::$current_progress = 0;
+			self::$current_progress_offset = $done;
 			self::$current_progress_width = ISWIN?50:(intval(shell_exec("tput cols")) - 20);
 		}
 		$perc_float = $done / $total * 100;
@@ -101,8 +103,10 @@ class CLI
 		
 		self::$current_progress_last = time();
 		$running = time() - self::$current_progress_start;
-		$eta = ($perc_float * $running > 0)
-			?floor(100 / $perc_float * $running) - $running + 1
+		
+		$eta_perc = ($done-self::$current_progress_offset) / ($total-self::$current_progress_offset) * 100;
+		$eta = ($eta_perc * $running > 0)
+			?floor(100 / $eta_perc * $running) - $running + 1
 			:'NA';
 			
 		self::$current_progress = $perc;

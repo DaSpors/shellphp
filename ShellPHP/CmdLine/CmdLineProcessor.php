@@ -150,9 +150,9 @@ abstract class CmdLineProcessor extends CmdLineParser
 		return $this;
 	}
 	
-	public function flag($name,$default)
+	public function flag($name)
 	{
-		$this->flags[] = $flag = new CmdLineFlag($this,$name,$default);
+		$this->flags[] = $flag = new CmdLineFlag($this,$name);
 		return $flag;
 	}
 

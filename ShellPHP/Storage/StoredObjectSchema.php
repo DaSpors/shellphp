@@ -88,7 +88,8 @@ class StoredObjectSchema
 	{
 		$cols = array();
 		foreach( $this->columns as $col )
-			$cols[] = "[{$col['name']}] {$col['type']}".($col['pk']?' PRIMARY KEY':'').($col['ai']?' AUTOINCREMENT':'');
+			$cols[] = "[{$col['name']}] {$col['type']}".($col['pk']?' PRIMARY KEY':'').($col['ai']?' AUTOINCREMENT':'')
+				.($col['pk']?'':' COLLATE NOCASE');
 		$sql = array(str_replace('{cols}',implode(", ",$cols),"CREATE TABLE IF NOT EXISTS [{$this->table}]({cols});"));
 		
 		foreach( $this->indexes as $name=>$cols )
@@ -154,10 +155,9 @@ class StoredObjectSchema
 		$pk = array();
 		foreach( $defaults as $k=>$v )
 		{
-			if( !isset($this->columns[$k]) || $v == $model->$k )
+			if( !isset($this->columns[$k]) || "$v" == "{$model->$k}" )
 				continue;
-			
-			if( $model->$k == '__NOW__' )
+			if( $model->$k === '__NOW__' )
 				$ph = "datetime('now')";
 			else
 			{

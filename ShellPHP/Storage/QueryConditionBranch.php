@@ -15,10 +15,16 @@ class QueryConditionBranch
 	
 	public function renderSql()
 	{
+		if( count($this->conditions) == 0 )
+			return "";
 		$res = array();
 		foreach( $this->conditions as $c )
 			if( $c instanceof QueryConditionBranch )
-				$res[] = $c->renderSql();
+			{
+				$t = $c->renderSql();
+				if( $t )
+					$res[] = $t;
+			}
 			else
 				$res[] = "$c";
 		return "{$this->prefix}(".implode(" {$this->clause} ",$res).")";

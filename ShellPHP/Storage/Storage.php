@@ -85,14 +85,13 @@ class Storage
 					if( !$res->tableExists($tablename) )
 						continue;
 					$code = $classname::getCodeScheme();
+					
 					if( $code->table == $tablename )
 					{
 						$stored = StoredObjectSchema::FromTable($tablename);
 						if( count(array_diff($code->renderSql(),$stored->renderSql())) == 0 )
 							continue;
 						
-						//\ShellPHP\CmdLine\CLI::writeln("CODE",$code->renderSql());
-						//\ShellPHP\CmdLine\CLI::writeln("DB  ",$stored->renderSql(),$stored);
 						foreach( array_merge($stored->uniques, $stored->indexes) as $name=>$cols )
 							$res->exec("DROP INDEX IF EXISTS [$name]");
 						$res->exec("ALTER TABLE [$tablename] RENAME TO '{$tablename}_shellphp_temp'");
@@ -101,6 +100,8 @@ class Storage
 					else
 						$res->__classMap[$classname] = $code->table;
 					
+						\ShellPHP\CmdLine\CLI::writeln("CODE",$code->renderSql());
+						\ShellPHP\CmdLine\CLI::writeln("DB  ",$stored->renderSql(),$stored);
 					\ShellPHP\CmdLine\CLI::writeln("Updating database for '$classname'");
 					$total = $res->querySingle("SELECT count(*) FROM [$tablename]");
 					$res->exec("BEGIN TRANSACTION");

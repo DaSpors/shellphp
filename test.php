@@ -15,7 +15,7 @@ $cli = \ShellPHP\CmdLine\CmdLine::Make("ShellPHP Test Script","Version 0.0.0.2")
 		})
 		->end()
 	->command('add')
-		->opt('-p')->map('path')->text('Local folder to scan')
+		->opt('-p')->map('path')->text('Local folder to add')
 		->handler(function($args)
 		{
 			extract($args);

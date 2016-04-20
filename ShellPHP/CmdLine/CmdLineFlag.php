@@ -2,14 +2,12 @@
 
 class CmdLineFlag extends CmdLineData
 {
-	var $default;
 	var $present;
 	
-	public function __construct(CmdLineProcessor $parent, $name, $default)
+	public function __construct(CmdLineProcessor $parent, $name)
 	{
 		$this->parent = $parent;
 		$this->name = $name;
-		$this->default = $default;
 	}
 	
 	protected function setData($cli_args)
@@ -29,7 +27,7 @@ class CmdLineFlag extends CmdLineData
 	
 	protected function validate()
 	{
-		$this->value = $this->present?true:$this->default;
+		$this->value = $this->present;
 	}	
 
 	public function syntax($short = true,$eol="")
@@ -37,6 +35,6 @@ class CmdLineFlag extends CmdLineData
 		if( $short )
 			CLI::write("[{$this->syntaxName}]{$eol}");
 		else
-			CLI::write("\t{$this->syntaxName}\t(default: {$this->defaultValue})\t{$this->description}{$eol}");
+			CLI::write("\t{$this->syntaxName}\t{$this->description}{$eol}");
 	}
 }

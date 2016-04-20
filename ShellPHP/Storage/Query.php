@@ -9,6 +9,7 @@ class Query
 	
 	private $columns = array('*');
 	private $from = array();
+	private $join = array();
 	private $where = false;
 	private $group = array();
 	private $having = false;
@@ -24,6 +25,7 @@ class Query
 		$this->scheme = StoredObjectSchema::FromTable($this->tableName);
 		$this->escaper = new \SQLite3(':memory:');
 	
+		$this->columns = array("{$this->tableName}.*");
 		$this->from = array($this->tableName);
 	}
 	
@@ -119,7 +121,7 @@ class Query
 		if( $operation == ' LIKE ' && !preg_match('/[%_]/',$op) )
 			$op = "%$op%";
 		$k = "arg".count($this->arguments);
-		$this->arguments[$k] = $op;
+		$this->arguments[$k] = is_bool($op)?($op?1:0):$op;
 		return ":$k";
 		return "'".$this->escaper->escapeString($op)."'";
 	}
@@ -162,6 +164,18 @@ class Query
 	public function any()
 	{
 		return $this->__ensureBranch('OR');
+	}
+	
+	public function resolveFK($alias,$column,$foreign_table,$foreign_column='id')
+	{
+		$schema = StoredObjectSchema::FromTable($foreign_table);
+		$cols = array();
+		foreach( array_keys($schema->columns) as $col )
+			$cols[] = "{$alias}.{$col} as {$alias}_{$col}";
+		
+		$this->join[] = "LEFT JOIN {$foreign_table} {$alias} ON {$alias}.{$foreign_column}={$this->tableName}.{$column}";
+		$this->column(implode(",",$cols));
+		return $this;
 	}
 	
 	public function not($clause='AND')
@@ -215,6 +229,8 @@ class Query
 	public function renderSql()
 	{
 		$sql = "SELECT ".implode(", ",$this->columns)." FROM ".implode(", ",$this->from);
+		if( count($this->join)>0 )
+			$sql .= " ".implode(" ",$this->join);
 		if( $this->where )
 			$sql .= " WHERE".$this->where->renderSql();
 		if( count($this->group)>0 )
