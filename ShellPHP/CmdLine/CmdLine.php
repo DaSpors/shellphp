@@ -12,7 +12,10 @@ class CmdLine extends CmdLineProcessor
 		$this->setTitle($title)->setVersion($version);
 			
 		if( stripos(php_uname('s'),'windows') !== false )
+		{
+			@shell_exec("chcp 65001");
 			$this->helpFlag = $this->flag('/?',false)->alias('--help');
+		}
 		else
 			$this->helpFlag = $this->flag('--help',false)->alias('/?');
 		
