@@ -140,10 +140,12 @@ class CLI
 			flushTable();
 	}
 
-	public static function flushTable()
+	public static function flushTable($outer_bar=false,$skip_if_empty=false)
 	{
 		if( count(self::$current_table) == 0 )
-			return;
+			return false;
+		if( count(self::$current_table) == 1 && $skip_if_empty )
+			return false;
 		
 		$lengths = array();
 		$mli = 0; $len = 0;
@@ -170,6 +172,8 @@ class CLI
 		
 		$pad = "  ";
 		$head = str_pad("-",strlen(implode($pad,self::$current_table[$mli])),'-');
+		if( $outer_bar )
+			self::writeln($head);
 		foreach( self::$current_table as $row )
 		{
 			self::writeln(implode($pad,$row));
@@ -179,6 +183,9 @@ class CLI
 				self::writeln($head);
 			}
 		}
+		if( $outer_bar )
+			self::writeln($head);
 		self::$current_table = array();
+		return true;
 	}
 }
