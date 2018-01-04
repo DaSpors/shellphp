@@ -56,6 +56,10 @@ class CmdLineArgument extends CmdLineData
 				CLI::write("[<{$this->syntaxName}>]{$eol}");
 			return;
 		}
-		CLI::write("\t{$this->syntaxName}\t({$this->requiredValue})\t{$this->description}{$eol}");
+		if( !$this->required && $this->defaultValue )
+			$def = "default: ".$this->defaultValue;
+		else 
+			$def = $this->requiredValue;
+		CLI::write("\t{$this->syntaxName}\t({$def})\t{$this->description}{$eol}");
 	}
 }

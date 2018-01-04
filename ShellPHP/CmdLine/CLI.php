@@ -126,26 +126,30 @@ class CLI
 	private static $current_table = false;
 	private static $current_table_hp = false;
 	private static $current_table_af = false;
-	public static function startTable($columns, $auto_flush_rows=100)
+	private static $current_table_ob = false;
+	private static $current_table_se = false;
+	public static function startTable($columns, $auto_flush_rows=100, $outer_bar=false, $skip_if_empty=false)
 	{
 		self::$current_table = array($columns);
 		self::$current_table_hp = false;
 		self::$current_table_af = $auto_flush_rows;
+		self::$current_table_ob = $outer_bar;
+		self::$current_table_se = $skip_if_empty;
 	}
 
 	public static function addTableRow($row)
 	{
 		self::$current_table[] = array_values($row);
 		if( count(self::$current_table) >= self::$current_table_af )
-			flushTable();
+			flushTable(false);
 	}
 
-	public static function flushTable($outer_bar=false,$skip_if_empty=false)
+	public static function flushTable($finished=true)
 	{
 		if( count(self::$current_table) == 0 )
-			return false;
-		if( count(self::$current_table) == 1 && $skip_if_empty )
-			return false;
+			return self::$current_table_hp;
+		if( count(self::$current_table) == 1 && self::$current_table_se )
+			return self::$current_table_hp;
 		
 		$lengths = array();
 		$mli = 0; $len = 0;
@@ -172,7 +176,7 @@ class CLI
 		
 		$pad = "  ";
 		$head = str_pad("-",strlen(implode($pad,self::$current_table[$mli])),'-');
-		if( $outer_bar )
+		if( self::$current_table_ob && !self::$current_table_hp )
 			self::writeln($head);
 		foreach( self::$current_table as $row )
 		{
@@ -183,7 +187,7 @@ class CLI
 				self::writeln($head);
 			}
 		}
-		if( $outer_bar )
+		if( self::$current_table_ob && $finished )
 			self::writeln($head);
 		self::$current_table = array();
 		return true;
